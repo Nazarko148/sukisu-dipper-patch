@@ -6,6 +6,7 @@ env:
   device: muyu
   device_name: Xiaomi Pad 7 Pro
   android_version: Android U
+  anykernel3_ref: 020dfeccf9d7e962a48400fc94d3e451df92eead
   base_defconfig: gki_defconfig
   device_configs: |
     arch/arm64/configs/vendor/pineapple_GKI.config
@@ -53,7 +54,6 @@ jobs:
             llvm \
             pkg-config \
             python3 \
-            unzip \
             zip \
             zlib1g-dev
 
@@ -157,13 +157,18 @@ jobs:
 
           test -f out/arch/arm64/boot/Image
 
+      - name: Checkout AnyKernel3
+        uses: actions/checkout@v4
+        with:
+          repository: osm0sis/AnyKernel3
+          ref: ${{ env.anykernel3_ref }}
+          path: AnyKernel3
+
       - name: Pack with AnyKernel3
         run: |
           set -euo pipefail
-          curl -Lo AnyKernel3.zip https://github.com/osm0sis/AnyKernel3/archive/refs/heads/master.zip
-          unzip -q AnyKernel3.zip
 
-          cat > AnyKernel3-master/anykernel.sh <<EOF
+          cat > AnyKernel3/anykernel.sh <<EOF
           properties() { '
           kernel.string=SukiSU-Ultra ($sukisu_ref) for $device_name ($device)
           do.devicecheck=1
@@ -183,15 +188,15 @@ jobs:
           flash_boot
           EOF
 
-          cp out/arch/arm64/boot/Image AnyKernel3-master/
+          cp out/arch/arm64/boot/Image AnyKernel3/
           if [ -f out/arch/arm64/boot/Image.lz4 ]; then
-            cp out/arch/arm64/boot/Image.lz4 AnyKernel3-master/
+            cp out/arch/arm64/boot/Image.lz4 AnyKernel3/
           fi
           if [ -f out/arch/arm64/boot/dtbo.img ]; then
-            cp out/arch/arm64/boot/dtbo.img AnyKernel3-master/
+            cp out/arch/arm64/boot/dtbo.img AnyKernel3/
           fi
 
-          cd AnyKernel3-master
+          cd AnyKernel3
           rm -rf .git* README.md
           zip -r ../boot.zip *
 
@@ -205,31 +210,3 @@ jobs:
             out/.config
             out/arch/arm64/boot/Image
           retention-days: 30
-
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: sukisu-${{ inputs.sukisu_tag || 'main' }}-${{ env.device }}-${{ steps.kernel-info.outputs.kernel_commit_id }}
-          body: |
-            ## SukiSU-Ultra Kernel for ${{ env.device_name }} (${{ env.device }})
-
-            **Device:** ${{ env.device_name }} (${{ env.device }})
-            **Android:** ${{ env.android_version }}
-            **Kernel:** ${{ steps.kernel-info.outputs.kernel_version }} (${{ steps.kernel-info.outputs.kernel_commit_id }})
-            **SukiSU-Ultra:** ${{ inputs.sukisu_tag || 'main' }}
-
-            ### Kernel Source
-            https://github.com/${{ env.kernel_repository }}/tree/${{ env.kernel_branch }}
-
-            ### SukiSU-Ultra
-            https://github.com/SukiSU-Ultra/SukiSU-Ultra
-
-            ### Installation
-            1. Download `boot.zip`
-            2. Flash it from a custom recovery that supports the device
-            3. Reboot the tablet
-            4. Install the SukiSU-Ultra manager APK from the upstream releases page
-
-            > ⚠️ Flash at your own risk. Keep a backup of your stock boot image before flashing.
-          files: |
-            boot.zip

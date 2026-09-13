@@ -33,7 +33,6 @@
 
 编译完成后：
 - 在 Actions 运行页面下载 `SukiSU-muyu-boot`
-- 或在 Releases 页面下载 `boot.zip`
 
 ### 4. 刷入设备
 
@@ -55,6 +54,7 @@
 4. 先生成 `gki_defconfig`，再合并 `vendor/pineapple_GKI.config` 与 `vendor/muyu_GKI.config`
 5. 启用 `CONFIG_KSU=y` 与 `CONFIG_KPM=y`
 6. 编译内核并打包为 AnyKernel3 可刷入 zip
+7. 使用固定提交的 AnyKernel3 打包，避免上游 `master` 变化导致结果漂移
 
 ## 自定义
 
