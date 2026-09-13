@@ -149,7 +149,7 @@ jobs:
             probe="$(grep -m1 '^[^#[:space:]]' "$fragment")"
             [ -n "$probe" ]
             grep -qxF "$probe" out/.config
-          done <<'EOF'
+          done <<EOF
           ${{ env.device_configs }}
           EOF
 
@@ -187,6 +187,8 @@ jobs:
       - name: Pack with AnyKernel3
         run: |
           set -euo pipefail
+          escaped_sukisu_ref="$(printf "%s" "$sukisu_ref" | sed "s/'/'\"'\"'/g")"
+          escaped_device_name="$(printf "%s" "$device_name" | sed "s/'/'\"'\"'/g")"
 
           cat > AnyKernel3/anykernel.sh <<EOF
           ### AnyKernel3 Ramdisk Mod Script
@@ -194,7 +196,7 @@ jobs:
 
           ### AnyKernel setup
           properties() { '
-          kernel.string=SukiSU-Ultra ($sukisu_ref) for $device_name ($device)
+          kernel.string=SukiSU-Ultra ($escaped_sukisu_ref) for $escaped_device_name ($device)
           do.devicecheck=1
           do.modules=0
           do.systemless=1
