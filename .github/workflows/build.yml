@@ -144,8 +144,14 @@ jobs:
           # Verify the workflow-applied options and that both target fragments stayed merged.
           grep -qxF 'CONFIG_KSU=y' out/.config
           grep -qxF 'CONFIG_KPM=y' out/.config
-          grep -qxF 'CONFIG_ARCH_PINEAPPLE=y' out/.config
-          grep -qxF 'CONFIG_MIHW=y' out/.config
+          while read -r fragment; do
+            [ -n "$fragment" ] || continue
+            probe="$(grep -m1 '^[^#[:space:]]' "$fragment")"
+            [ -n "$probe" ]
+            grep -qxF "$probe" out/.config
+          done <<'EOF'
+          ${{ env.device_configs }}
+          EOF
 
       - name: Build kernel
         run: |
