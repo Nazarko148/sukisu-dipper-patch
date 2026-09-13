@@ -32,11 +32,12 @@
 ### 3. 下载产物
 
 编译完成后：
-- 在 Actions 运行页面下载 `SukiSU-muyu-boot`
+- 在 Actions 运行页面下载 `SukiSU-muyu-boot` artifact 压缩包
+- 解压后取出其中的 `boot.zip`
 
 ### 4. 刷入设备
 
-1. 将 `boot.zip` 传输到平板
+1. 将从 artifact 中解压出来的 `boot.zip` 传输到平板
 2. 重启进入支持该设备的自定义 Recovery
 3. 刷入 `boot.zip`
 4. 重启系统
