@@ -129,11 +129,6 @@ jobs:
             LLVM_IAS=1 \
             olddefconfig
 
-          grep -qxF 'CONFIG_KSU=y' out/.config
-          grep -qxF 'CONFIG_KPM=y' out/.config
-          grep -qxF 'CONFIG_ARCH_PINEAPPLE=y' out/.config
-          grep -qxF 'CONFIG_MI_PEN_WIRELESS=y' out/.config
-
           ./scripts/config --file out/.config \
             -e KSU \
             -e KPM \
@@ -146,6 +141,11 @@ jobs:
             LLVM_IAS=1 \
             olddefconfig
 
+          grep -qxF 'CONFIG_KSU=y' out/.config
+          grep -qxF 'CONFIG_KPM=y' out/.config
+          grep -qxF 'CONFIG_ARCH_PINEAPPLE=y' out/.config
+          grep -qxF 'CONFIG_MI_PEN_WIRELESS=y' out/.config
+
       - name: Build kernel
         run: |
           set -euo pipefail
@@ -154,6 +154,8 @@ jobs:
           export ARCH=arm64
           export SUBARCH=arm64
           export PATH="$HOME/clang/bin:$PATH"
+          export CCACHE_DIR="$HOME/.ccache"
+          export CCACHE_BASEDIR="$GITHUB_WORKSPACE"
           export KBUILD_BUILD_USER=build
           export KBUILD_BUILD_HOST=localhost
           export KBUILD_COMPILER_STRING="$(clang --version | head -n1)"
@@ -214,9 +216,6 @@ jobs:
           EOF
 
           cp out/arch/arm64/boot/Image AnyKernel3/
-          if [ -f out/arch/arm64/boot/Image.lz4 ]; then
-            cp out/arch/arm64/boot/Image.lz4 AnyKernel3/
-          fi
           if [ -f out/arch/arm64/boot/dtbo.img ]; then
             cp out/arch/arm64/boot/dtbo.img AnyKernel3/
           fi
