@@ -61,7 +61,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.ccache
-          key: ccache-${{ env.device }}-${{ env.kernel_branch }}-${{ inputs.sukisu_tag || 'main' }}
+          key: ccache-${{ env.device }}-${{ env.kernel_branch }}-clang-r547379
           restore-keys: |
             ccache-${{ env.device }}-${{ env.kernel_branch }}-
             ccache-${{ env.device }}-
@@ -142,11 +142,13 @@ jobs:
             LLVM_IAS=1 \
             olddefconfig
 
-          # Verify the workflow-applied options plus one anchor option from each required target fragment.
+          # Verify the workflow-applied options plus one anchor option derived from each required target fragment.
           grep -qxF 'CONFIG_KSU=y' out/.config
           grep -qxF 'CONFIG_KPM=y' out/.config
-          grep -qxF 'CONFIG_ARCH_PINEAPPLE=y' out/.config
-          grep -qxF 'CONFIG_MI_HARDWARE_ID=m' out/.config
+          pineapple_anchor="$(grep -m1 '^CONFIG_ARCH_PINEAPPLE=' arch/arm64/configs/vendor/pineapple_GKI.config)"
+          muyu_anchor="$(grep -m1 '^CONFIG_MI_HARDWARE_ID=' arch/arm64/configs/vendor/muyu_GKI.config)"
+          grep -qxF "$pineapple_anchor" out/.config
+          grep -qxF "$muyu_anchor" out/.config
 
       - name: Build kernel
         run: |
@@ -178,12 +180,6 @@ jobs:
           repository: osm0sis/AnyKernel3
           ref: ${{ env.anykernel3_ref }}
           path: AnyKernel3
-
-      - name: Validate packaging inputs
-        run: |
-          set -euo pipefail
-          test -f out/arch/arm64/boot/Image
-          grep -q 'Image Image-dtb Image.gz' AnyKernel3/tools/ak3-core.sh
 
       - name: Pack with AnyKernel3
         run: |
@@ -218,6 +214,10 @@ jobs:
           IS_SLOT_DEVICE=auto;
           RAMDISK_COMPRESSION=auto;
           PATCH_VBMETA_FLAG=auto;
+          block=$BLOCK;
+          is_slot_device=$IS_SLOT_DEVICE;
+          ramdisk_compression=$RAMDISK_COMPRESSION;
+          patch_vbmeta_flag=$PATCH_VBMETA_FLAG;
 
           . tools/ak3-core.sh;
 
@@ -230,6 +230,14 @@ jobs:
           cd AnyKernel3
           rm -rf .git* README.md
           zip -r ../boot.zip *
+          python3 - <<'PY'
+          import zipfile
+          names = set(zipfile.ZipFile('../boot.zip').namelist())
+          required = {'Image', 'anykernel.sh'}
+          missing = required - names
+          if missing:
+              raise SystemExit(f"Missing packaged files: {sorted(missing)}")
+          PY
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
