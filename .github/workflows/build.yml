@@ -6,10 +6,10 @@ env:
   device: muyu
   device_name: Xiaomi Pad 7 Pro
   android_version: Android U
-  defconfig: |
-    gki_defconfig
-    vendor/pineapple_GKI.config
-    vendor/muyu_GKI.config
+  base_defconfig: gki_defconfig
+  device_configs: |
+    arch/arm64/configs/vendor/pineapple_GKI.config
+    arch/arm64/configs/vendor/muyu_GKI.config
 
 on:
   workflow_dispatch:
@@ -96,7 +96,7 @@ jobs:
       - name: Setup SukiSU-Ultra
         run: |
           set -euo pipefail
-          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/${{ env.sukisu_ref }}/kernel/setup.sh" | bash -s "${{ env.sukisu_ref }}"
+          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/${sukisu_ref}/kernel/setup.sh" | bash -s "${sukisu_ref}"
 
       - name: Configure kernel
         run: |
@@ -110,7 +110,18 @@ jobs:
             ARCH=arm64 \
             LLVM=1 \
             LLVM_IAS=1 \
-            ${{ env.defconfig }}
+            ${{ env.base_defconfig }}
+
+          ./scripts/kconfig/merge_config.sh -m -O out \
+            out/.config \
+            ${{ env.device_configs }}
+
+          make -j"$(nproc --all)" \
+            O=out \
+            ARCH=arm64 \
+            LLVM=1 \
+            LLVM_IAS=1 \
+            olddefconfig
 
           ./scripts/config --file out/.config \
             -e KSU \
@@ -154,14 +165,12 @@ jobs:
 
           cat > AnyKernel3-master/anykernel.sh <<EOF
           properties() { '
-          kernel.string=SukiSU-Ultra (${{ env.sukisu_ref }}) for ${{ env.device_name }} (${{ env.device }})
+          kernel.string=SukiSU-Ultra ($sukisu_ref) for $device_name ($device)
           do.devicecheck=1
           do.modules=0
           do.cleanup=1
           do.cleanuponabort=1
-          device.name1=${{ env.device }}
-          device.name2=muyu
-          device.name3=Xiaomi_Pad_7_Pro
+          device.name1=$device
           '; }
 
           block=auto
@@ -200,14 +209,14 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: sukisu-${{ env.sukisu_ref }}-${{ env.device }}-${{ steps.kernel-info.outputs.kernel_commit_id }}
+          tag_name: sukisu-${{ inputs.sukisu_tag || 'main' }}-${{ env.device }}-${{ steps.kernel-info.outputs.kernel_commit_id }}
           body: |
             ## SukiSU-Ultra Kernel for ${{ env.device_name }} (${{ env.device }})
 
             **Device:** ${{ env.device_name }} (${{ env.device }})
             **Android:** ${{ env.android_version }}
             **Kernel:** ${{ steps.kernel-info.outputs.kernel_version }} (${{ steps.kernel-info.outputs.kernel_commit_id }})
-            **SukiSU-Ultra:** ${{ env.sukisu_ref }}
+            **SukiSU-Ultra:** ${{ inputs.sukisu_tag || 'main' }}
 
             ### Kernel Source
             https://github.com/${{ env.kernel_repository }}/tree/${{ env.kernel_branch }}
