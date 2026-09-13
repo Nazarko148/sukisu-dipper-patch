@@ -64,7 +64,7 @@
 - `kernel_branch`: 内核源码分支（默认 `muyu-v-oss`）
 - `base_defconfig`: 基础 GKI defconfig
 - `device_configs`: 需要合并的设备配置片段
-- `sukisu_tag`: SukiSU-Ultra 分支、标签或提交
+- `sukisu_tag`: SukiSU-Ultra 分支或标签
 
 ## 说明
 

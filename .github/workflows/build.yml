@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       sukisu_tag:
-        description: "SukiSU-Ultra tag/branch/commit (default: main)"
+        description: "SukiSU-Ultra tag/branch (default: main)"
         required: false
         default: "main"
 
@@ -88,15 +88,15 @@ jobs:
           repository: ${{ env.kernel_repository }}
           ref: ${{ env.kernel_branch }}
 
-      - name: Get kernel commit info
-        id: kernel-info
-        run: |
-          echo "kernel_commit_id=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
-          echo "kernel_version=$(make kernelversion 2>/dev/null || echo '6.1.68')" >> "$GITHUB_OUTPUT"
-
       - name: Setup SukiSU-Ultra
         run: |
           set -euo pipefail
+          case "${sukisu_ref}" in
+            *[!A-Za-z0-9._/-]*|'')
+              echo "Invalid sukisu_ref: ${sukisu_ref}" >&2
+              exit 1
+              ;;
+          esac
           rm -rf /tmp/SukiSU-Ultra
           git init /tmp/SukiSU-Ultra
           git -C /tmp/SukiSU-Ultra remote add origin https://github.com/SukiSU-Ultra/SukiSU-Ultra
@@ -141,10 +141,11 @@ jobs:
             LLVM_IAS=1 \
             olddefconfig
 
+          # Verify the workflow-applied options and that both target fragments stayed merged.
           grep -qxF 'CONFIG_KSU=y' out/.config
           grep -qxF 'CONFIG_KPM=y' out/.config
           grep -qxF 'CONFIG_ARCH_PINEAPPLE=y' out/.config
-          grep -qxF 'CONFIG_MI_PEN_WIRELESS=y' out/.config
+          grep -qxF 'CONFIG_MIHW=y' out/.config
 
       - name: Build kernel
         run: |
@@ -216,9 +217,6 @@ jobs:
           EOF
 
           cp out/arch/arm64/boot/Image AnyKernel3/
-          if [ -f out/arch/arm64/boot/dtbo.img ]; then
-            cp out/arch/arm64/boot/dtbo.img AnyKernel3/
-          fi
 
           cd AnyKernel3
           rm -rf .git* README.md
