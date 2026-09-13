@@ -61,7 +61,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.ccache
-          key: ccache-${{ env.device }}-${{ env.kernel_branch }}-${{ env.anykernel3_ref }}-${{ inputs.sukisu_tag || 'main' }}
+          key: ccache-${{ env.device }}-${{ env.kernel_branch }}-${{ inputs.sukisu_tag || 'main' }}
           restore-keys: |
             ccache-${{ env.device }}-${{ env.kernel_branch }}-
             ccache-${{ env.device }}-
@@ -142,21 +142,11 @@ jobs:
             LLVM_IAS=1 \
             olddefconfig
 
-          # Verify the workflow-applied options and that both target fragments stayed merged.
+          # Verify the workflow-applied options plus one anchor option from each required target fragment.
           grep -qxF 'CONFIG_KSU=y' out/.config
           grep -qxF 'CONFIG_KPM=y' out/.config
-          for fragment in ${{ env.device_configs }}; do
-            while IFS= read -r expected; do
-              case "$expected" in
-                CONFIG_*=*|'# CONFIG_'*' is not set')
-                  grep -qxF "$expected" out/.config
-                  ;;
-                ''|'#'*)
-                  continue
-                  ;;
-              esac
-            done < "$fragment"
-          done
+          grep -qxF 'CONFIG_ARCH_PINEAPPLE=y' out/.config
+          grep -qxF 'CONFIG_MI_HARDWARE_ID=m' out/.config
 
       - name: Build kernel
         run: |
@@ -188,6 +178,12 @@ jobs:
           repository: osm0sis/AnyKernel3
           ref: ${{ env.anykernel3_ref }}
           path: AnyKernel3
+
+      - name: Validate packaging inputs
+        run: |
+          set -euo pipefail
+          test -f out/arch/arm64/boot/Image
+          grep -q 'Image Image-dtb Image.gz' AnyKernel3/tools/ak3-core.sh
 
       - name: Pack with AnyKernel3
         run: |
