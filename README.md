@@ -32,18 +32,18 @@
 ### 3. 下载产物
 
 编译完成后：
-- 在 Actions 运行页面下载 `SukiSU-muyu-boot` artifact 压缩包
-- 解压后取出其中的 `boot.zip`
+- 在 Actions 运行页面下载 `SukiSU-muyu-kernel` artifact 压缩包
+- artifact 内包含 `Image`、`.config`、`build.log`，以及在生成时存在的 `dtbo.img`
 
 ### 4. 刷入设备
 
-1. 将从 artifact 中解压出来的 `boot.zip` 传输到平板
-2. 重启进入支持该设备的自定义 Recovery
-3. 刷入 `boot.zip`
+1. 将 artifact 中的 `Image`（以及存在时的 `dtbo.img`）取出
+2. 使用你当前 ROM / boot 结构对应的方法重打包到原始 boot 或 vendor_boot
+3. 再通过 fastboot 或 Recovery 刷入你重打包后的镜像
 4. 重启系统
 5. 安装 [SukiSU-Ultra Manager APK](https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases) 检查是否生效
 
-> ⚠️ **风险提示**：刷机有风险，请确保已备份原始 boot 镜像。
+> ⚠️ **风险提示**：刷机有风险，请确保已备份原始 boot / vendor_boot 镜像。不同 ROM 的打包结构可能不同，请按你的机型当前固件结构处理。
 
 ## 工作流做了什么
 
@@ -54,8 +54,7 @@
 3. 集成指定版本的 SukiSU-Ultra
 4. 先生成 `gki_defconfig`，再合并 `vendor/pineapple_GKI.config` 与 `vendor/muyu_GKI.config`
 5. 启用 `CONFIG_KSU=y` 与 `CONFIG_KPM=y`
-6. 编译内核并打包为 AnyKernel3 可刷入 zip
-7. 使用固定提交的 AnyKernel3 打包，避免上游 `master` 变化导致结果漂移
+6. 编译内核并导出刷机所需的原始产物
 
 ## 自定义
 
@@ -68,4 +67,4 @@
 
 ## 说明
 
-这个仓库当前面向 GKI 设备流程，不再使用原先针对 `dipper` 4.9 内核的旧补丁构建逻辑。
+这个仓库当前面向 GKI 设备流程，不再使用原先针对 `dipper` 4.9 内核的旧补丁构建逻辑，也不再假设单一的 AnyKernel3 打包方式适用于所有 `muyu` 固件结构。
