@@ -29,12 +29,9 @@ jobs:
     runs-on: ubuntu-22.04
     permissions:
       contents: write
+    env:
+      sukisu_ref: ${{ inputs.sukisu_tag || 'main' }}
     steps:
-      - name: Set env
-        run: |
-          SUKISU_REF="${{ inputs.sukisu_tag || 'main' }}"
-          echo "sukisu_ref=$SUKISU_REF" >> "$GITHUB_ENV"
-
       - name: Install packages
         run: |
           sudo apt-get update
@@ -91,9 +88,10 @@ jobs:
           ref: ${{ env.kernel_branch }}
 
       - name: Get kernel commit info
+        id: kernel-info
         run: |
-          echo "kernel_commit_id=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
-          echo "kernel_version=$(make kernelversion 2>/dev/null || echo '6.1.68')" >> "$GITHUB_ENV"
+          echo "kernel_commit_id=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "kernel_version=$(make kernelversion 2>/dev/null || echo '6.1.68')" >> "$GITHUB_OUTPUT"
 
       - name: Setup SukiSU-Ultra
         run: |
@@ -202,13 +200,13 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: sukisu-${{ env.sukisu_ref }}-${{ env.device }}-${{ env.kernel_commit_id }}
+          tag_name: sukisu-${{ env.sukisu_ref }}-${{ env.device }}-${{ steps.kernel-info.outputs.kernel_commit_id }}
           body: |
             ## SukiSU-Ultra Kernel for ${{ env.device_name }} (${{ env.device }})
 
             **Device:** ${{ env.device_name }} (${{ env.device }})
             **Android:** ${{ env.android_version }}
-            **Kernel:** ${{ env.kernel_version }} (${{ env.kernel_commit_id }})
+            **Kernel:** ${{ steps.kernel-info.outputs.kernel_version }} (${{ steps.kernel-info.outputs.kernel_commit_id }})
             **SukiSU-Ultra:** ${{ env.sukisu_ref }}
 
             ### Kernel Source
