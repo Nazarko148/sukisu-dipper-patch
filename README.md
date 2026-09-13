@@ -1,18 +1,18 @@
-# SukiSU-Ultra Kernel for Xiaomi Mi 8 (dipper)
+# SukiSU-Ultra Kernel for Xiaomi Pad 7 Pro (muyu)
 
-为小米 8 编译集成 SukiSU-Ultra 的 Linux 内核。
+为小米平板 7 Pro 编译集成 SukiSU-Ultra 的 GKI 内核。
 
 ## 信息
 
 | 项目 | 详情 |
 |------|------|
-| 设备 | 小米 8 (dipper) |
-| Android 版本 | 9 (Pie) |
-| 内核版本 | 4.9.112 |
-| 内核源码 | [MiCode/Xiaomi_Kernel_OpenSource](https://github.com/MiCode/Xiaomi_Kernel_OpenSource) (分支: `dipper-p-oss`) |
+| 设备 | Xiaomi Pad 7 Pro (muyu) |
+| Android 版本 | Android U / HyperOS |
+| 内核版本 | 6.1.68 |
+| 内核源码 | [MiCode/Xiaomi_Kernel_OpenSource](https://github.com/MiCode/Xiaomi_Kernel_OpenSource) (分支: `muyu-v-oss`) |
 | Root 方案 | [SukiSU-Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra) |
-| 编译器 | AOSP Clang r365631c (Clang 9, 最兼容 4.9 内核) |
-| Hook 方式 | KPROBES |
+| 编译器 | Kei Space Clang `r547379` |
+| 配置 | `gki_defconfig` + `vendor/pineapple_GKI.config` + `vendor/muyu_GKI.config` |
 | 编译方式 | GitHub Actions (云端) |
 
 ## 使用方法
@@ -25,54 +25,45 @@
 
 1. 进入你 Fork 后的仓库页面
 2. 点击 **Actions** 标签页
-3. 选择左侧的 **Build SukiSU-Ultra Kernel for Xiaomi Mi 8 (dipper)**
+3. 选择左侧的 **Build SukiSU-Ultra Kernel for Xiaomi Pad 7 Pro (muyu)**
 4. 点击右侧 **Run workflow** 按钮
-5. 保持默认参数（或自定义 SukiSU 版本），点击绿色 **Run workflow** 按钮
+5. 按需填写 `sukisu_tag`（默认 `main`），然后启动工作流
 
 ### 3. 下载产物
 
-编译完成后（约 15-25 分钟）：
-- 在 Actions 运行页面的 **Artifacts** 区域下载 `SukiSU-dipper-boot`
+编译完成后：
+- 在 Actions 运行页面下载 `SukiSU-muyu-boot`
 - 或在 Releases 页面下载 `boot.zip`
 
 ### 4. 刷入设备
 
-1. 将 `boot.zip` 传输到手机
-2. 重启进入 Recovery (TWRP / OrangeFox)
+1. 将 `boot.zip` 传输到平板
+2. 重启进入支持该设备的自定义 Recovery
 3. 刷入 `boot.zip`
 4. 重启系统
 5. 安装 [SukiSU-Ultra Manager APK](https://github.com/SukiSU-Ultra/SukiSU-Ultra/releases) 检查是否生效
 
-> ⚠️ **风险提示**：刷机有风险，请确保已备份原始 boot.img。如果出现问题，可通过 fastboot 刷回原始内核。
+> ⚠️ **风险提示**：刷机有风险，请确保已备份原始 boot 镜像。
 
-## 补丁说明
+## 工作流做了什么
 
-| 补丁 | 说明 |
-|------|------|
-| `backport-path-umount.patch` | 从高版本内核 backport `path_umount` 到 `fs/namespace.c`，使模块卸载功能正常工作 |
-| `allow-init-exec-ksud-under-nosuid.patch` | 允许 init 在 nosuid 挂载点执行 ksud |
+工作流会自动完成以下步骤：
+
+1. 拉取 Xiaomi Pad 7 Pro 官方开源内核分支 `muyu-v-oss`
+2. 安装 GKI 6.1 编译所需依赖
+3. 集成指定版本的 SukiSU-Ultra
+4. 生成 `gki_defconfig + vendor/pineapple_GKI.config + vendor/muyu_GKI.config`
+5. 启用 `CONFIG_KSU=y` 与 `CONFIG_KPM=y`
+6. 编译内核并打包为 AnyKernel3 可刷入 zip
 
 ## 自定义
 
-修改 `.github/workflows/build.yml` 中的 `env` 部分可以调整：
+修改 `.github/workflows/build.yml` 中的 `env` 或 `workflow_dispatch` 参数可以调整：
 
-- `sukisu_branch` / `inputs.sukisu_tag`: SukiSU-Ultra 版本（默认 main，可选 v4.1.3 等）
-- `defconfig`: 内核 defconfig（默认 `dipper_user_defconfig`）
-- `clang_version`: AOSP Clang 版本（4.9 内核推荐 `r365631c`）
+- `kernel_branch`: 内核源码分支（默认 `muyu-v-oss`）
+- `defconfig`: GKI 与设备配置组合
+- `sukisu_tag`: SukiSU-Ultra 分支、标签或提交
 
-## 技术说明
+## 说明
 
-小米 8 是非 GKI 设备（内核 4.9），SukiSU-Ultra 支持非 GKI 内核（4.4+），但需要手动集成和编译：
-
-1. 使用 `setup.sh` 将 SukiSU 代码集成到内核源码的 `drivers/kernelsu/`
-2. 启用 `CONFIG_KPROBES=y` 和 `CONFIG_KSU=y`
-3. 应用必要补丁（path_umount backport + selinux 补丁）
-4. 使用 AOSP Clang 9 编译内核
-5. 打包为 AnyKernel3 可刷入格式
-
-## 致谢
-
-- [SukiSU-Ultra](https://github.com/SukiSU-Ultra/SukiSU-Ultra) by ShirkNeko
-- [KernelSU](https://github.com/tiann/KernelSU) by weishu
-- [KernelSU-Action](https://github.com/bin456789/KernelSU-Action) by bin456789
-- [Xiaomi Kernel Open Source](https://github.com/MiCode/Xiaomi_Kernel_OpenSource) by Xiaomi
+这个仓库当前面向 GKI 设备流程，不再使用原先针对 `dipper` 4.9 内核的旧补丁构建逻辑。
